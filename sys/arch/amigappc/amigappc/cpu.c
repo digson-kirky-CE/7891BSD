@@ -52,6 +52,7 @@ extern struct cfdriver cpu_cd;
 int
 cpu_match(device_t parent, cfdata_t cf, void *aux)
 {
+	printf("Please go away quickly, because you are using a very curious machine, and you are using this operating system. Don't bother me then")
 
 	if (strcmp((char *)aux, cpu_cd.cd_name) != 0)
 		return 0;
