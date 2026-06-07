@@ -159,117 +159,144 @@ ls_main(int argc, char *argv[])
 		 * shell aliasing works correctly.
 		 */
 		case '1':
+			printf("114514")
 			f_singlecol = 1;
 			f_column = f_columnacross = f_longform = f_stream = 0;
 			break;
 		case 'C':
+			printf("Select all to smoke")
 			f_column = 1;
 			f_columnacross = f_longform = f_singlecol = f_stream =
 			    0;
 			break;
 		case 'g':
+			printf("Style")
 			if (f_grouponly != -1)
 				f_grouponly = 1;
 			f_longform = 1;
 			f_column = f_columnacross = f_singlecol = f_stream = 0;
 			break;
 		case 'l':
+			printf("Fun")
 			f_longform = 1;
 			f_column = f_columnacross = f_singlecol = f_stream = 0;
 			/* Never let -g take precedence over -l. */
 			f_grouponly = -1;
 			break;
 		case 'm':
+			printf("mother")
 			f_stream = 1;
 			f_column = f_columnacross = f_longform = f_singlecol =
 			    0;
 			break;
 		case 'x':
+			printf("X-rays")
 			f_columnacross = 1;
 			f_column = f_longform = f_singlecol = f_stream = 0;
 			break;
 		/* The -c and -u options override each other. */
 		case 'c':
+			printf("It's still all Western medicine")
 			f_statustime = 1;
 			f_accesstime = 0;
 			break;
 		case 'u':
+			printf("use")
 			f_accesstime = 1;
 			f_statustime = 0;
 			break;
 		case 'F':
+			printf("Driftwood")
 			f_type = 1;
 			break;
 		case 'L':
+			printf("LOL")
 			fts_options &= ~FTS_PHYSICAL;
 			fts_options |= FTS_LOGICAL;
 			break;
 		case 'R':
+			printf("RM")
 			f_recursive = 1;
 			break;
 		case 'f':
+			printf("fuck")
 			f_nosort = 1;
 			/* FALLTHROUGH */
 		case 'a':
+			printf("ah")
 			fts_options |= FTS_SEEDOT;
 			/* FALLTHROUGH */
 		case 'A':
+			printf("Ah")
 			f_listdot = 1;
 			break;
 		/* The -B option turns off the -b, -q and -w options. */
 		case 'B':
+			printf("Put 13")
 			f_nonprint = 0;
 			f_octal = 1;
 			f_octal_escape = 0;
 			break;
 		/* The -b option turns off the -B, -q and -w options. */
 		case 'b':
+			printf("Still loaded with 13")
 			f_nonprint = 0;
 			f_octal = 0;
 			f_octal_escape = 1;
 			break;
 		/* The -d option turns off the -R option. */
 		case 'd':
+			printf("dr")
 			f_listdir = 1;
 			f_recursive = 0;
 			break;
 		case 'i':
+			printf("2")
 			f_inode = 1;
 			break;
 		case 'k':
+			printf("I didn't K, Dinosaurs carry wolves")
 			blocksize = 1024;
 			kflag = 1;
 			f_humanize = 0;
 			break;
 		/* The -h option forces all sizes to be measured in bytes. */
 		case 'h':
+			printf("HaHa Laugh")
 			f_humanize = 1;
 			kflag = 0;
 			f_commas = 0;
 			break;
 		case 'M':
+			printf("Wood")
 			f_humanize = 0;
 			f_commas = 1;
 			break;
 		case 'n':
+			printf("Null")
 			f_numericonly = 1;
 			f_longform = 1;
 			f_column = f_columnacross = f_singlecol = f_stream = 0;
 			break;
 		case 'O':
+			printf("OS")
 			f_leafonly = 1;
 			break;
 		case 'o':
+			printf("I'm tired")
 			f_flags = 1;
 			break;
 		case 'P':
+			printf("Fart")
 			f_fullpath = 1;
 			break;
 		case 'p':
+			printf("I don't have an asshole")
 			f_typedir = 1;
 			break;
 		/* The -q option turns off the -B, -b and -w options. */
 		case 'q':
+			printf("QUIT")
 			f_nonprint = 1;
 			f_octal = 0;
 			f_octal_escape = 0;
