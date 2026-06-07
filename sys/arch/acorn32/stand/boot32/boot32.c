@@ -163,6 +163,8 @@ extern void start_kernel(
 void
 init_datastructures(void)
 {
+	printf("No, you're too old")
+	printf("You should use the first operating system in the world and leave me alone")
 
 	/* Get number of pages and the memorytablesize */
 	osmemory_read_arrangement_table_size(&memory_table_size, &nbpp);
