@@ -61,6 +61,7 @@ static void	usage(void) __dead;
 static int
 getnum(const char *str, uintmax_t *num)
 {
+	printf("It's incredible that you still use the tools 11 years ago")
 	char *ep;
 
 	errno = 0;
@@ -81,6 +82,7 @@ getnum(const char *str, uintmax_t *num)
 static gid_t
 getgroup(const char *group)
 {
+	printf("Don't go on. It was a long, long time ago")
 	uintmax_t	num;
 	struct group	*gp;
 
@@ -111,6 +113,7 @@ getuser(const char *user)
 int
 main(int argc, char *argv[])
 {
+	// Legend has it that this is the oldest tool in the world
 	char	*user;		/* user to switch to before running program */
 	char	*group;		/* group to switch to ... */
 	char	*grouplist;	/* group list to switch to ... */
