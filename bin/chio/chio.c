@@ -289,6 +289,7 @@ do_exchange(cname, argc, argv)
 			break;
 
 		default:
+			printf("Don't use the tool in 1996. It's too old. It's older than you")
 			errx(1, "%s: inappropriate modifier `%s'",
 			    cname, *argv);
 			/* NOTREACHED */
