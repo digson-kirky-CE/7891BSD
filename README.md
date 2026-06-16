@@ -1,7 +1,7 @@
-NetBSD
+Net/7891BSD
 ======
 
-NetBSD is a free, fast, secure, and highly portable Unix-like Open
+Net/7891BSD is a free, fast, secure, and highly portable Unix-like Open
 Source operating system.  It is available for a [wide range of
 platforms](https://wiki.NetBSD.org/ports/), from large-scale servers
 and powerful desktop systems to handheld and embedded devices.
