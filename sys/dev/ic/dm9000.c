@@ -1,4 +1,4 @@
-/*	$NetBSD: dm9000.c,v 1.41 2025/10/04 04:44:20 thorpej Exp $	*/
+/*	$NetBSD: dm9000.c,v 1.44 2026/06/14 16:00:25 gutteridge Exp $	*/
 
 /*
  * Copyright (c) 2009 Paul Fleischer
@@ -87,6 +87,7 @@
  */
 
 #include <sys/cdefs.h>
+__KERNEL_RCSID(0, "$NetBSD: dm9000.c,v 1.44 2026/06/14 16:00:25 gutteridge Exp $");
 
 #include <sys/param.h>
 #include <sys/bus.h>
@@ -214,7 +215,7 @@ dme_attach(struct dme_softc *sc, const uint8_t *notusedanymore)
 #endif
 	if (! ether_getaddr(sc->sc_dev, enaddr)) {
 		/*
-		 * If we did not get an externally configure address,
+		 * If we did not get an externally configured address,
 		 * try to read one from the current setup, before
 		 * resetting the chip.
 		 */
@@ -226,7 +227,7 @@ dme_attach(struct dme_softc *sc, const uint8_t *notusedanymore)
 			enaddr[0] = maclo;
 			enaddr[1] = maclo >> 8;
 			enaddr[2] = maclo >> 16;
-			enaddr[3] = maclo >> 26;
+			enaddr[3] = maclo >> 24;
 			enaddr[4] = machi;
 			enaddr[5] = machi >> 8;
 		}

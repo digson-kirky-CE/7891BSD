@@ -1,4 +1,4 @@
-/* $NetBSD: dwc_eqos.c,v 1.50 2026/05/30 15:23:27 jmcneill Exp $ */
+/* $NetBSD: dwc_eqos.c,v 1.55 2026/06/13 17:28:49 jmcneill Exp $ */
 
 /*-
  * Copyright (c) 2022-2026 Jared McNeill <jmcneill@invisible.ca>
@@ -36,7 +36,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: dwc_eqos.c,v 1.50 2026/05/30 15:23:27 jmcneill Exp $");
+__KERNEL_RCSID(0, "$NetBSD: dwc_eqos.c,v 1.55 2026/06/13 17:28:49 jmcneill Exp $");
 
 #include <sys/param.h>
 #include <sys/bus.h>
@@ -66,6 +66,8 @@ __KERNEL_RCSID(0, "$NetBSD: dwc_eqos.c,v 1.50 2026/05/30 15:23:27 jmcneill Exp $
 #define	EQOS_TXDMA_SIZE		(EQOS_MAX_MTU + ETHER_HDR_LEN + ETHER_CRC_LEN)
 #define	EQOS_RXDMA_SIZE		2048	/* Fixed value by hardware */
 CTASSERT(MCLBYTES >= EQOS_RXDMA_SIZE);
+#define	EQOS_RXBUF_SIZE		(EQOS_RXDMA_SIZE * EQOS_DMA_RXBUF_COUNT)
+#define	EQOS_TX_PACKET_PER_INTR	16
 
 #ifdef EQOS_DEBUG
 #define	EDEB_NOTE		(1U << 0)
@@ -277,7 +279,7 @@ eqos_dma_sync(struct eqos_softc *sc, bus_dmamap_t map,
 
 static uint32_t
 eqos_setup_txdesc(struct eqos_softc *sc, int index, int flags,
-    bus_addr_t paddr, u_int len, u_int total_len)
+    bus_addr_t paddr, u_int len, u_int total_len, bool ioc)
 {
 	struct eqos_dma_desc desc;
 	uint32_t tdes2, tdes3;
@@ -294,7 +296,8 @@ eqos_setup_txdesc(struct eqos_softc *sc, int index, int flags,
 		tdes3 = 0;
 		--sc->sc_tx.queued;
 	} else {
-		tdes2 = (flags & EQOS_TDES3_TX_LD) ? EQOS_TDES2_TX_IOC : 0;
+		tdes2 = (ioc && (flags & EQOS_TDES3_TX_LD) != 0) ?
+			EQOS_TDES2_TX_IOC : 0;
 		tdes3 = flags;
 		++sc->sc_tx.queued;
 	}
@@ -368,6 +371,7 @@ eqos_setup_txbuf(struct eqos_softc *sc, int index, struct mbuf *m,
 	}
 	first_tdes3 = 0;
 
+	const bool ioc = (sc->sc_tx.count++ % EQOS_TX_PACKET_PER_INTR) == 0;
 	for (cur = index, i = 0; i < nsegs; i++) {
 		uint32_t tdes3;
 
@@ -375,7 +379,7 @@ eqos_setup_txbuf(struct eqos_softc *sc, int index, struct mbuf *m,
 			flags |= EQOS_TDES3_TX_LD;
 
 		tdes3 = eqos_setup_txdesc(sc, cur, flags, segs[i].ds_addr,
-		    segs[i].ds_len, m->m_pkthdr.len);
+		    segs[i].ds_len, m->m_pkthdr.len, ioc);
 		cur = TX_NEXT(cur);
 
 		if (i == 0) {
@@ -446,15 +450,54 @@ eqos_setup_rxbuf(struct eqos_softc *sc, int index, struct mbuf *m)
 	return 0;
 }
 
+static struct eqos_rxbuf *
+eqos_alloc_rxbuf(struct eqos_softc *sc)
+{
+	struct eqos_rxbuf *rxbuf;
+
+	mutex_enter(&sc->sc_rxdata.freelist_mtx);
+	rxbuf = SLIST_FIRST(&sc->sc_rxdata.freelist);
+	if (rxbuf != NULL) {
+		SLIST_REMOVE_HEAD(&sc->sc_rxdata.freelist, next);
+	}
+	mutex_exit(&sc->sc_rxdata.freelist_mtx);
+
+	return rxbuf;
+}
+
+static void
+eqos_free_rxbuf(struct mbuf *m, void *buf, size_t size, void *arg)
+{
+	struct eqos_rxbuf *rxbuf = arg;
+	struct eqos_softc *sc = rxbuf->sc;
+
+	mutex_enter(&sc->sc_rxdata.freelist_mtx);
+	SLIST_INSERT_HEAD(&sc->sc_rxdata.freelist, rxbuf, next);
+	mutex_exit(&sc->sc_rxdata.freelist_mtx);
+
+	if (__predict_true(m != NULL)) {
+		pool_cache_put(mb_cache, m);
+	}
+}
+
 static struct mbuf *
 eqos_alloc_mbufcl(struct eqos_softc *sc)
 {
+	struct eqos_rxbuf *rxbuf;
 	struct mbuf *m;
 
-	m = m_getcl(M_NOWAIT, MT_DATA, M_PKTHDR);
-	if (m != NULL)
-		m->m_pkthdr.len = m->m_len = m->m_ext.ext_size;
-	MCLAIM(m, &sc->sc_ec.ec_rx_mowner);
+	m = m_gethdr(M_NOWAIT, MT_DATA);
+	if (m == NULL) {
+		return NULL;
+	}
+	rxbuf = eqos_alloc_rxbuf(sc);
+	if (rxbuf == NULL) {
+		m_freem(m);
+		return NULL;
+	}
+	MEXTADD(m, rxbuf->vaddr, EQOS_RXDMA_SIZE, 0, eqos_free_rxbuf, rxbuf);
+	m->m_flags |= M_EXT_RW;
+	m->m_pkthdr.len = m->m_len = m->m_ext.ext_size;
 
 	return m;
 }
@@ -603,6 +646,26 @@ eqos_setup_rxfilter(struct eqos_softc *sc)
 	WR4(sc, GMAC_MAC_PACKET_FILTER, pfil);
 }
 
+static void
+eqos_setup_coe(struct eqos_softc *sc)
+{
+	struct ifnet * const ifp = &sc->sc_ec.ec_if;
+	const uint64_t if_capenable = ifp->if_capenable;
+	uint32_t val;
+
+	EQOS_ASSERT_LOCKED(sc);
+
+	val = RD4(sc, GMAC_MAC_CONFIGURATION);
+	if ((if_capenable & (IFCAP_CSUM_IPv4_Tx | IFCAP_CSUM_IPv4_Rx |
+			     IFCAP_CSUM_TCPv4_Tx | IFCAP_CSUM_TCPv4_Rx |
+			     IFCAP_CSUM_UDPv4_Tx | IFCAP_CSUM_UDPv4_Rx)) != 0) {
+		val |= GMAC_MAC_CONFIGURATION_IPC;
+	} else {
+		val &= ~GMAC_MAC_CONFIGURATION_IPC;
+	}
+	WR4(sc, GMAC_MAC_CONFIGURATION, val);
+}
+
 static int
 eqos_reset(struct eqos_softc *sc)
 {
@@ -664,8 +727,9 @@ eqos_init_locked(struct eqos_softc *sc)
 	EQOS_ASSERT_TXLOCKED(sc);
 
 	if ((ifp->if_flags & IFF_RUNNING) != 0) {
-		/* Only Setup RX filter */
+		/* Only Setup RX filter and checksum offload */
 		eqos_setup_rxfilter(sc);
+		eqos_setup_coe(sc);
 		return 0;
 	}
 
@@ -675,6 +739,9 @@ eqos_init_locked(struct eqos_softc *sc)
 	/* Setup RX filter */
 	sc->sc_if_flags = ifp->if_flags;
 	eqos_setup_rxfilter(sc);
+
+	/* Setup checksum offload */
+	eqos_setup_coe(sc);
 
 	WR4(sc, GMAC_MAC_1US_TIC_COUNTER, (sc->sc_csr_clock / 1000000) - 1);
 
@@ -1561,8 +1628,43 @@ eqos_setup_dma(struct eqos_softc *sc, int qid)
 			return error;
 		}
 		EQOS_TXLOCK(sc);
-		eqos_setup_txdesc(sc, i, 0, 0, 0, 0);
+		eqos_setup_txdesc(sc, i, 0, 0, 0, 0, false);
 		EQOS_TXUNLOCK(sc);
+	}
+
+	/* Setup RX buffers */
+	error = bus_dmamap_create(sc->sc_dmat, EQOS_RXBUF_SIZE, 1,
+	    EQOS_RXBUF_SIZE, 0, BUS_DMA_WAITOK, &sc->sc_rxdata.map);
+	if (error) {
+		return error;
+	}
+	error = bus_dmamem_alloc(sc->sc_dmat, EQOS_RXBUF_SIZE, PAGE_SIZE, 0,
+	    &sc->sc_rxdata.seg, 1, &nsegs, BUS_DMA_WAITOK);
+	if (error) {
+		return error;
+	}
+	error = bus_dmamem_map(sc->sc_dmat, &sc->sc_rxdata.seg, nsegs,
+	    EQOS_RXBUF_SIZE, &sc->sc_rxdata.vaddr, BUS_DMA_WAITOK);
+	if (error) {
+		return error;
+	}
+	error = bus_dmamap_load(sc->sc_dmat, sc->sc_rxdata.map,
+	    sc->sc_rxdata.vaddr, EQOS_RXBUF_SIZE, NULL, BUS_DMA_WAITOK);
+	if (error) {
+		return error;
+	}
+	sc->sc_rxdata.paddr = sc->sc_rxdata.map->dm_segs[0].ds_addr;
+
+	mutex_init(&sc->sc_rxdata.freelist_mtx, MUTEX_DEFAULT, IPL_NET);
+	SLIST_INIT(&sc->sc_rxdata.freelist);
+	for (i = 0; i < EQOS_DMA_RXBUF_COUNT; i++) {
+		sc->sc_rxdata.rxbuf[i].sc = sc;
+		sc->sc_rxdata.rxbuf[i].vaddr =
+		    (char *)sc->sc_rxdata.vaddr + i * EQOS_RXDMA_SIZE;
+		sc->sc_rxdata.rxbuf[i].paddr =
+		    sc->sc_rxdata.paddr + i * EQOS_RXDMA_SIZE;
+		SLIST_INSERT_HEAD(&sc->sc_rxdata.freelist,
+		    &sc->sc_rxdata.rxbuf[i], next);
 	}
 
 	/* Setup RX ring */
@@ -1593,7 +1695,7 @@ eqos_setup_dma(struct eqos_softc *sc, int qid)
 
 	for (i = 0; i < RX_DESC_COUNT; i++) {
 		error = bus_dmamap_create(sc->sc_dmat, MCLBYTES,
-		    RX_DESC_COUNT, MCLBYTES, 0,
+		    1, MCLBYTES, 0,
 		    BUS_DMA_WAITOK | BUS_DMA_ALLOCNOW,
 		    &sc->sc_rx.buf_map[i].map);
 		if (error != 0) {
@@ -1628,6 +1730,7 @@ eqos_attach(struct eqos_softc *sc)
 {
 	struct mii_data * const mii = &sc->sc_mii;
 	struct ifnet * const ifp = &sc->sc_ec.ec_if;
+	struct ifcapreq ifcr;
 	uint8_t eaddr[ETHER_ADDR_LEN];
 	u_int userver, snpsver;
 	int error;
@@ -1755,7 +1858,7 @@ eqos_attach(struct eqos_softc *sc)
 	IFQ_SET_MAXLEN(&ifp->if_snd, IFQ_MAXLEN);
 	IFQ_SET_READY(&ifp->if_snd);
 
-	/* 802.1Q VLAN-sized frames, and jumbo frame are supported */
+	/* 802.1Q VLAN-sized frames and jumbo frames are supported */
 	sc->sc_ec.ec_capabilities |= ETHERCAP_VLAN_MTU;
 	sc->sc_ec.ec_capabilities |= ETHERCAP_JUMBO_MTU;
 
@@ -1827,6 +1930,16 @@ eqos_attach(struct eqos_softc *sc)
 
 	rnd_attach_source(&sc->sc_rndsource, ifp->if_xname, RND_TYPE_NET,
 	    RND_FLAG_DEFAULT);
+
+	/* Try to enable COE */
+	memset(&ifcr, 0, sizeof(ifcr));
+	snprintf(ifcr.ifcr_name, sizeof(ifcr.ifcr_name), "%s", if_name(ifp));
+	ifcr.ifcr_capenable = ifp->if_capabilities;
+	error = ifioctl_common(ifp, SIOCSIFCAP, &ifcr);
+	if (error != 0) {
+		aprint_error_dev(sc->sc_dev, "failed to enable COE: %d\n",
+		    error);
+	}
 
 	return 0;
 }

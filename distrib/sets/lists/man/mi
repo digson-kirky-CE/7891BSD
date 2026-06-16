@@ -1,4 +1,4 @@
-# $NetBSD: mi,v 1.1833 2026/06/04 14:22:21 jdc Exp $
+# $NetBSD: mi,v 1.1835 2026/06/11 19:51:15 rumble Exp $
 #
 # Note: don't delete entries from here - mark them as "obsolete" instead.
 ./etc/mtree/set.man				man-sys-root
@@ -611,6 +611,8 @@
 ./usr/share/man/cat1/setextattr.0		man-util-catman		.cat
 ./usr/share/man/cat1/setfacl.0			man-util-catman		.cat
 ./usr/share/man/cat1/sftp.0			man-secsh-catman	ssh,.cat
+./usr/share/man/cat1/sgimips/haudfw.0		man-util-catman		.cat
+./usr/share/man/cat1/sgimips/undist.0		man-util-catman		.cat
 ./usr/share/man/cat1/sh.0			man-util-catman		.cat
 ./usr/share/man/cat1/sha1.0			man-util-catman		.cat
 ./usr/share/man/cat1/sha256.0			man-util-catman		.cat
@@ -1851,6 +1853,7 @@
 ./usr/share/man/cat4/sgimips/giopci.0		man-sys-catman		.cat
 ./usr/share/man/cat4/sgimips/grtwo.0		man-sys-catman		.cat
 ./usr/share/man/cat4/sgimips/haltwo.0		man-sys-catman		.cat
+./usr/share/man/cat4/sgimips/haud.0		man-sys-catman		.cat
 ./usr/share/man/cat4/sgimips/hpc.0		man-sys-catman		.cat
 ./usr/share/man/cat4/sgimips/imc.0		man-sys-catman		.cat
 ./usr/share/man/cat4/sgimips/intro.0		man-sys-catman		.cat
@@ -4210,6 +4213,8 @@
 ./usr/share/man/man1/setextattr.1		man-util-man		.man
 ./usr/share/man/man1/setfacl.1			man-util-man		.man
 ./usr/share/man/man1/sftp.1			man-secsh-man		ssh,.man
+./usr/share/man/man1/sgimips/haudfw.1		man-util-man		.man
+./usr/share/man/man1/sgimips/undist.1		man-util-man		.man
 ./usr/share/man/man1/sh.1			man-util-man		.man
 ./usr/share/man/man1/sha1.1			man-util-man		.man
 ./usr/share/man/man1/sha256.1			man-util-man		.man
@@ -5451,6 +5456,7 @@
 ./usr/share/man/man4/sgimips/giopci.4		man-sys-man		.man
 ./usr/share/man/man4/sgimips/grtwo.4		man-sys-man		.man
 ./usr/share/man/man4/sgimips/haltwo.4		man-sys-man		.man
+./usr/share/man/man4/sgimips/haud.4		man-sys-man		.man
 ./usr/share/man/man4/sgimips/hpc.4		man-sys-man		.man
 ./usr/share/man/man4/sgimips/imc.4		man-sys-man		.man
 ./usr/share/man/man4/sgimips/intro.4		man-sys-man		.man

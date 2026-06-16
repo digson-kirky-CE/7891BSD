@@ -1,4 +1,4 @@
-# $NetBSD: mi,v 1.51 2026/06/04 14:22:21 jdc Exp $
+# $NetBSD: mi,v 1.53 2026/06/11 19:51:15 rumble Exp $
 #
 # Note: don't delete entries from here - mark them as "obsolete" instead.
 #
@@ -550,6 +550,8 @@
 ./usr/share/man/html1/setextattr.html		man-util-htmlman	html
 ./usr/share/man/html1/setfacl.html		man-util-htmlman	html
 ./usr/share/man/html1/sftp.html			man-secsh-htmlman	ssh,html
+./usr/share/man/html1/sgimips/haudfw.html	man-util-htmlman	html
+./usr/share/man/html1/sgimips/undist.html	man-util-htmlman	html
 ./usr/share/man/html1/sh.html			man-util-htmlman	html
 ./usr/share/man/html1/sha1.html			man-util-htmlman	html
 ./usr/share/man/html1/sha256.html		man-util-htmlman	html
@@ -1664,6 +1666,7 @@
 ./usr/share/man/html4/sgimips/giopci.html	man-sys-htmlman		html
 ./usr/share/man/html4/sgimips/grtwo.html	man-sys-htmlman		html
 ./usr/share/man/html4/sgimips/haltwo.html	man-sys-htmlman		html
+./usr/share/man/html4/sgimips/haud.html		man-sys-htmlman		html
 ./usr/share/man/html4/sgimips/hpc.html		man-sys-htmlman		html
 ./usr/share/man/html4/sgimips/imc.html		man-sys-htmlman		html
 ./usr/share/man/html4/sgimips/intro.html	man-sys-htmlman		html

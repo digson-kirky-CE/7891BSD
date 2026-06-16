@@ -1,4 +1,4 @@
-/*	$NetBSD: pmap_machdep.h,v 1.19 2026/05/31 09:04:28 skrll Exp $	*/
+/*	$NetBSD: pmap_machdep.h,v 1.21 2026/06/15 15:18:04 skrll Exp $	*/
 
 /*-
  * Copyright (c) 2022 The NetBSD Foundation, Inc.
@@ -73,9 +73,6 @@
 
 #define	__HAVE_PMAP_PV_TRACK
 #define	__HAVE_PMAP_MD
-
-/* XXX temporary */
-#define	__HAVE_UNLOCKED_PMAP
 
 #define	PMAP_PAGE_INIT(pp)				\
 do {							\
@@ -560,7 +557,7 @@ pte_make_enter(paddr_t pa, const struct vm_page_md *mdpg, vm_prot_t prot,
 
 	/*
 	 * When doing modified emulation mark page as RO and
-	 * LX_BLKPAG_OS_MODEMUL. A write fault will use the existance of
+	 * LX_BLKPAG_OS_MODEMUL. A write fault will use the existence of
 	 * OS_MODEMUL to fixup the pte and mark the page as writeable.
 	 * AP_RW and OS_MODEMUL indicates that is was modified.
 	 *
